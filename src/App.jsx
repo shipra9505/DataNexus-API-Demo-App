@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
-// ✅ FIX 1: fallback added (prevents undefined API)
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000"
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const DEMO_KEY = import.meta.env.VITE_DEMO_API_KEY || ''
+const axiosClient = axios.create({
+  baseURL: API,
+  headers: DEMO_KEY ? { 'X-API-Key': DEMO_KEY } : {},
+})
 
 export default function App() {
   const [form, setForm] = useState({
@@ -14,6 +18,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(false)
+  const [detailsLoading, setDetailsLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState(null)
 
@@ -29,7 +34,7 @@ export default function App() {
       setLoading(true)
       try {
         // ✅ FIX 2: correct route
-        const res = await axios.get(`${API}/api/v1/search/autocomplete?q=${query}`)
+        const res = await axiosClient.get('/api/v1/search/autocomplete', { params: { q: query } })
         setSuggestions(res?.data?.data ?? [])
       } catch (err) {
         console.error(err)
@@ -48,10 +53,10 @@ export default function App() {
     setSuggestions([])
     setQuery(village.label)
     setError(null)
+    setDetailsLoading(true)
 
     try {
-      // ✅ FIX 3: correct route
-      const res = await axios.get(`${API}/api/v1/villages/${village.value}`)
+      const res = await axiosClient.get(`/api/v1/villages/${village.value}`)
       const h = res.data.data.hierarchy
 
       setForm(f => ({
@@ -73,6 +78,8 @@ export default function App() {
       } else {
         setError('Something went wrong')
       }
+    } finally {
+      setDetailsLoading(false)
     }
   }
 
@@ -122,6 +129,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
+
+        {!DEMO_KEY && (
+          <div className="rounded-2xl border border-yellow-300 bg-yellow-50 p-4 text-yellow-800 mb-6 text-sm">
+            Demo API key is not configured. Please set <code className="font-mono">VITE_DEMO_API_KEY</code> in <code className="font-mono">.env</code>.
+          </div>
+        )}
 
         <h1 className="text-2xl font-semibold text-center mb-6">Contact Form</h1>
 
@@ -178,6 +191,12 @@ export default function App() {
               <div className="absolute right-3 top-2.5 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             )}
 
+            {query.length >= 2 && !loading && suggestions.length === 0 && (
+              <div className="absolute w-full bg-white border rounded-lg mt-1 shadow-lg z-10 px-4 py-3 text-sm text-slate-500">
+                No villages found. Try a different search term or broaden your search.
+              </div>
+            )}
+
             {query.length >= 2 && suggestions.length > 0 && (
               <div className="absolute w-full bg-white border rounded-lg mt-1 shadow-lg z-10">
                 {suggestions.map(s => (
@@ -193,6 +212,12 @@ export default function App() {
               </div>
             )}
           </div>
+
+          {detailsLoading && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700 mb-4">
+              Loading village details...
+            </div>
+          )}
 
           <div className="grid sm:grid-cols-2 gap-4">
             {['subDistrict','district','state','country'].map(field => (
