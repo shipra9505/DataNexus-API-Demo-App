@@ -34,7 +34,7 @@ export default function App() {
       setLoading(true)
       try {
         // ✅ FIX 2: correct route
-        const res = await axiosClient.get('/api/v1/search/autocomplete', { params: { q: query } })
+        const res = await axiosClient.get(`${API}/search/autocomplete`, { params: { q: query } })
         setSuggestions(res?.data?.data ?? [])
       } catch (err) {
         console.error(err)
