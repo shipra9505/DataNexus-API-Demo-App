@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
+
+console.log("API URL:", import.meta.env.VITE_API_URL)
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const DEMO_KEY = import.meta.env.VITE_DEMO_API_KEY || ''
 const axiosClient = axios.create({
